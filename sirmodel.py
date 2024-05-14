@@ -10,17 +10,20 @@ Original file is located at
 import random
 import numpy as np
 import math
+import matplotlib.pyplot as plt
 
 # グローバル変数（環境変数の設定）
-initial_infected_rate = 0.2
-population = 10
-vertical_limit = 10
-horizontal_limit = 10
-death_rate = 0.5
-infection_distance = 2
-infection_period = 1
-move_distance = 1
-test_day = 5
+initial_infected_rate = 0.1
+population = 500
+vertical_limit = 1000
+horizontal_limit = 1000
+death_rate = 0.2
+infection_distance = 5
+infection_period = 10
+move_max_distance = 100
+move_min_distance = 5
+move_distance_alpha = 10
+test_day = 50
 
 
 class Walker():
@@ -68,11 +71,9 @@ class Agt_Infect():
   def InfectAgt(self):
       if self.me.condition == 1:
         for agt in self.me.touch_list:
-          print(agt.condition)
           if agt.condition == 0:
             agt.condition = 1
             agt.counter = 1
-            print(agt.id)
 
   def ProgressInfection(self):
       self.me.counter+=1
@@ -93,7 +94,12 @@ class Agt_Move():
       self.id = id
       self.me = walker_list[id]
       self.run()
-
+    
+    def caluclate_distace(self):
+      r = np.random.uniform(0, 1)
+      move_distance = (move_min_distance * (1 - r) ** (-1 / (move_distance_alpha - 1))-1) * 200
+      return move_distance
+      
     def move_in_direction(self,x, y, angle, distance):
       # 角度をラジアンに変換
       radians = math.radians(angle)
@@ -116,25 +122,8 @@ class Agt_Move():
     def run(self):
       #移動方向
       self.me.direction = random.random()*360
+      move_distance = self.caluclate_distace()
       [self.me.x,self.me.y]=self.move_in_direction(self.me.x, self.me.y, self.me.direction, move_distance)
-
-
-def count_agent(walker_list):
-  s_num=0
-  i_num=0
-  r_num=0
-  d_num=0
-  for walker in walker_list:
-    if walker.condition == 0:
-      s_num += 1
-    elif walker.condition == 1:
-      i_num += 1
-    elif walker.condition == 2:
-      r_num += 1
-    elif walker.condition == 4:
-      d_num += 1
-  return [s_num, i_num, r_num, d_num]
-
 
 
 def generate_agent():
@@ -146,7 +135,7 @@ def generate_agent():
     else:
       walker = Walker(i,0)
     walker_list.append(walker)
-    print(id,walker.condition,walker.condition,'(',walker.x, walker.y,')')
+    # print(id,walker.condition,walker.condition,'(',walker.x, walker.y,')')
   return walker_list
 
 
@@ -170,23 +159,71 @@ def progress_day(walker_list):
       alive_id.append(id)
   for id in alive_id:
     Agt_Move(walker_list,id)
-    print(id,walker_list[id].condition, '(',walker_list[id].x, walker_list[id].y,')')
+    # print(id,walker_list[id].condition, '(',walker_list[id].x, walker_list[id].y,')')
   return walker_list
+
+
+def count_agent(walker_list):
+  s_num=0
+  i_num=0
+  r_num=0
+  d_num=0
+  for walker in walker_list:
+    if walker.condition == 0:
+      s_num += 1
+    elif walker.condition == 1:
+      i_num += 1
+    elif walker.condition == 2:
+      r_num += 1
+    elif walker.condition == 4:
+      d_num += 1
+  print('未感染者数：',s_num)
+  print('感染者数：',i_num)
+  print('回復者数：',r_num)
+  print('死亡者数：',d_num)
+  return [s_num,i_num,r_num,d_num]
+
+
+def create_fig(s_num_list,i_num_list,r_num_list,d_num_list):
+  plt.plot(s_num_list, label='Susceptible')
+  plt.plot(i_num_list, label='Infected')
+  plt.plot(r_num_list, label='Recoverd')
+  plt.plot(d_num_list, label='Dead')
+  # グラフのタイトルとラベル
+  plt.title('Sample Multiple Line Plot')
+  plt.xlabel('Day')
+  plt.ylabel('Value')
+  # 凡例の表示
+  plt.legend()
+  # グラフを表示
+  plt.show()
 
 
 def main():
   walker_list = []
+  s_num_list = []
+  i_num_list = []
+  r_num_list = []
+  d_num_list = []
   print('DAY :: ',0)
   walker_list = generate_agent()
+  count_list = count_agent(walker_list)
+  s_num_list.append(count_list[0])
+  i_num_list.append(count_list[1])
+  r_num_list.append(count_list[2])
+  d_num_list.append(count_list[3])
 
   for day in range(test_day):
     print('DAY :: ',day+1)
     walker_list = progress_day(walker_list)
-    infect_count = 0
-    for walker in walker_list:
-      if walker.condition == 1:
-        infect_count+=1
+    count_list = count_agent(walker_list)
+    s_num_list.append(count_list[0])
+    i_num_list.append(count_list[1])
+    r_num_list.append(count_list[2])
+    d_num_list.append(count_list[3])
   
+  create_fig(s_num_list,i_num_list,r_num_list,d_num_list)
+    
 
 if __name__ == '__main__':
   main()
