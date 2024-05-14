@@ -1,36 +1,46 @@
-import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
+from matplotlib.animation import FuncAnimation
+import numpy as np
 
-def power_law_distribution(alpha, min_value, max_value, size=1):
-    """
-    パワー・ロー分布に従う乱数を生成する関数
+# サンプルデータの作成
+data = {
+    'x': np.random.rand(10) * 10,
+    'y': np.random.rand(10) * 10,
+    'status': np.random.choice(['A', 'B', 'C'], 10)
+}
+
+# データフレームの作成
+df = pd.DataFrame(data)
+
+# 色マッピングの設定
+color_map = {'A': 'red', 'B': 'green', 'C': 'blue'}
+
+# プロットの初期設定
+fig, ax = plt.subplots()
+scat = ax.scatter(df['x'], df['y'], c=[color_map[status] for status in df['status']])
+
+# 軸の範囲設定
+ax.set_xlim(0, 10)
+ax.set_ylim(0, 10)
+ax.set_xlabel('X Axis')
+ax.set_ylabel('Y Axis')
+ax.set_title('Real-time Scatter Plot with Status Colors')
+
+# 更新関数
+def update(frame):
+    # ランダムにデータを更新（サンプル用）
+    df['x'] = np.random.rand(10) * 10
+    df['y'] = np.random.rand(10) * 10
+    df['status'] = np.random.choice(['A', 'B', 'C'], 10)
     
-    Parameters:
-    - alpha: パワー・ロー分布の指数
-    - min_value: 最小値（スケール）
-    - max_value: 最大値
-    - size: 生成する乱数の数
-    
-    Returns:
-    - パワー・ロー分布に従う乱数の配列
-    """
-    r = np.random.uniform(0, 1, size)
-    return (min_value * (1 - r) ** (-1 / (alpha - 1))-1)*200
+    # 更新されたデータに基づいて散布図を再描画
+    scat.set_offsets(np.c_[df['x'], df['y']])
+    scat.set_color([color_map[status] for status in df['status']])
+    return scat,
 
-# パラメータの設定
-alpha = 20
-min_value = 1
-max_value = 100
-size = 10000
+# アニメーションの設定
+ani = FuncAnimation(fig, update, frames=range(50), interval=500, blit=True)
 
-# パワー・ロー分布に従う乱数を生成
-values = power_law_distribution(alpha, min_value, max_value, size)
-
-print(values)
-
-# ヒストグラムをプロットして確認
-plt.hist(values, bins=50, density=True)
-plt.xlabel('Value')
-plt.ylabel('Probability Density')
-plt.title('Power Law Distribution')
+# グラフの表示
 plt.show()
