@@ -9,62 +9,178 @@ Original file is located at
 
 import random
 import numpy as np
+import math
 
 # グローバル変数（環境変数の設定）
-action_radius1 = 50
-action_radius2 = 50
-initial_infected = 0.3
-population = 100
+initial_infected_rate = 0.2
+population = 10
+vertical_limit = 10
+horizontal_limit = 10
 max_contact = 15
-
-def around_radius(me, another):
-  return (np.sqrt((me.x-another.x)**2 + (me.y-another.y)**2))
+death_rate = 0.2
+infection_distance = 5
+infection_period = 1
+move_distance = 1
+test_day = 5
+walker_list = []
 
 class Walker():
-  def __init__(self, id, group):
+  #id;エージェントid
+  #counter;特定のイベントの経過時間
+  #x,y;座標
+  #condition:状態　（0;健康　1;感染　2;回復　3;潜伏感染　4;死亡）
+  def __init__(self, id, condition):
     self.id = id
     self.counter = 0
-    self.x = random.randint(0, 50)
-    self.y = random.randint(0, 50)
-    if group == 1:
-      self.aciton_radius = action_radius1
-    else:
-      self.action_radius = action_radius2
-    self.condition = 0
-    self.direction = random.rand()*360
-    self.in_hospital = 0
-    self.death_rate = 0.2
-    self.is_serious = 0
+    self.x = random.uniform(0, vertical_limit)
+    self.y = random.uniform(0, horizontal_limit)
+    #0;健康　1;感染　2;回復　3;潜伏感染　4;死亡
+    self.condition  = condition
+    if condition == 1:
+      self.counter = 1
 
-class Agt_Step():
+
+class Agt_Touch():
   def __init__(self, walker_list, id):
     self.walker_list = walker_list
     self.id = id
     self.me = walker_list[id]
+    self.run()
 
   def MakeAllAgeSetAroundOwn(self):
     neighbor_list = []
     for agt in self.walker_list:
       if agt.id == self.id:
         continue
-      if around_radius(self.me, agt) <= action_radius1:
+      agent_distance = math.sqrt((agt.x - self.me.x)**2 + (agt.y - self.me.y)**2)
+      if agent_distance<infection_distance:
         neighbor_list.append(agt)
       return (neighbor_list)
 
-  def TouchAgt(self, neighbor_list):
-    touch_list = []
-    for i in range(max_contact):
-      if (len(neighbor_list)) == 0:
-        break
-      r = random.randint(0, len(neighbor_list)-1)
-      one = neighbor_list[r]
-      touch_list.append(one)
-      del neighbor_list[r]
-      return (touch_list)
+  # def TouchAgt(self, neighbor_list):
+  #   touch_list = []
+  #   for i in range(max_contact):
+  #     if (len(neighbor_list)) == 0:
+  #       break
+  #     r = random.randint(0, len(neighbor_list)-1)
+  #     one = neighbor_list[r]
+  #     touch_list.append(one)
+  #     del neighbor_list[r]
+  #     return (touch_list)
+
+  def run(self):
+    neighbor_list = self.MakeAllAgeSetAroundOwn()
+    # self.me.touch_list = self.TouchAgt(neighbor_list)
+    self.me.touch_list = neighbor_list
 
 
-# agentの集合リスト
-walker_list = []
+class Agt_Infect():
+  def __init__(self, walker_list, id):
+    self.walker_list = walker_list
+    self.id = id
+    self.me = walker_list[id]
+    self.run()
 
-for i in range(population):
-  walker_list.append(Walker(i, 1))
+  def InfectAgt(self):
+      if self.me.condition == 1:
+        for agt in self.me.touch_list:
+          print(agt.condition)
+          if agt.condition == 0:
+            agt.condition = 1
+            agt.counter = 1
+            print(agt.id)
+
+  def ProgressInfection(self):
+      self.me.counter+=1
+      if self.me.counter >= infection_period:
+        if random.random()<death_rate:
+          self.me.condition = 4
+        else:
+          self.me.condition = 2
+  
+  def run(self):
+    self.InfectAgt()
+    self.ProgressInfection()
+
+
+class Agt_Move():
+    def __init__(self, walker_list, id):
+      self.walker_list = walker_list
+      self.id = id
+      self.me = walker_list[id]
+      self.run()
+
+    def move_in_direction(self,x, y, angle, distance):
+      # 角度をラジアンに変換
+      radians = math.radians(angle)
+      # x 方向の移動量と y 方向の移動量を計算
+      delta_x = distance * math.cos(radians)
+      delta_y = distance * math.sin(radians)
+      # 新しい座標を計算
+      new_x = x + delta_x
+      new_y = y + delta_y
+      if new_x < 0:
+        new_x=0
+      elif new_x > horizontal_limit:
+        new_x=horizontal_limit
+      if new_y < 0:
+        new_y=0
+      elif new_y > vertical_limit:
+        new_y=vertical_limit
+      return [new_x, new_y]
+    
+    def run(self):
+      #移動方向
+      self.me.direction = random.random()*360
+      [self.me.x,self.me.y]=self.move_in_direction(self.me.x, self.me.y, self.me.direction, move_distance)
+
+
+def generate_agent(walker_list):
+  initialinfected_id = random.sample(range(population),int(population*initial_infected_rate))
+  for i in range(population):
+    if i+1 in initialinfected_id:
+      walker = Walker(i,1)
+    else:
+      walker = Walker(i,0)
+    walker_list.append(walker)
+  return walker_list
+
+
+def progress_day(walker_list):
+  #接触agentの特定
+  for id in range(population):
+      Agt_Touch(walker_list,id)
+
+  #感染が伝播したagentの特定
+  infection_id = []
+  for id in range(population):
+    if walker_list[id].condition==3:
+      infection_id.append(id)
+  for id in infection_id:
+    Agt_Infect(walker_list, id)
+  
+  alive_id = []
+  for id in range(population):
+    if walker_list[id].condition!=4:
+      alive_id.append(id)
+  for id in alive_id:
+    Agt_Move(walker_list,id)
+  return walker_list
+
+
+def main():
+  walker_list = []
+  walker_list = generate_agent(walker_list)
+
+  for day in range(test_day):
+    walker_list = progress_day(walker_list)
+    infect_count = 0
+    for walker in walker_list:
+      if walker.condition ==1:
+        infect_count+=1
+    print(day,":",infect_count)
+  
+
+
+if __name__ == '__main__':
+  main()
