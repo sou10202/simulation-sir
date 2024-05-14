@@ -16,13 +16,12 @@ initial_infected_rate = 0.2
 population = 10
 vertical_limit = 10
 horizontal_limit = 10
-max_contact = 15
-death_rate = 0.2
-infection_distance = 5
+death_rate = 0.5
+infection_distance = 2
 infection_period = 1
 move_distance = 1
 test_day = 5
-walker_list = []
+
 
 class Walker():
   #id;エージェントid
@@ -45,33 +44,18 @@ class Agt_Touch():
     self.walker_list = walker_list
     self.id = id
     self.me = walker_list[id]
-    self.run()
+    neighbor_list = self.MakeAllAgeSetAroundOwn()
+    self.me.touch_list = neighbor_list
 
   def MakeAllAgeSetAroundOwn(self):
     neighbor_list = []
     for agt in self.walker_list:
-      if agt.id == self.id:
+      if agt.id == self.me.id:
         continue
       agent_distance = math.sqrt((agt.x - self.me.x)**2 + (agt.y - self.me.y)**2)
       if agent_distance<infection_distance:
         neighbor_list.append(agt)
-      return (neighbor_list)
-
-  # def TouchAgt(self, neighbor_list):
-  #   touch_list = []
-  #   for i in range(max_contact):
-  #     if (len(neighbor_list)) == 0:
-  #       break
-  #     r = random.randint(0, len(neighbor_list)-1)
-  #     one = neighbor_list[r]
-  #     touch_list.append(one)
-  #     del neighbor_list[r]
-  #     return (touch_list)
-
-  def run(self):
-    neighbor_list = self.MakeAllAgeSetAroundOwn()
-    # self.me.touch_list = self.TouchAgt(neighbor_list)
-    self.me.touch_list = neighbor_list
+    return (neighbor_list)
 
 
 class Agt_Infect():
@@ -135,7 +119,26 @@ class Agt_Move():
       [self.me.x,self.me.y]=self.move_in_direction(self.me.x, self.me.y, self.me.direction, move_distance)
 
 
-def generate_agent(walker_list):
+def count_agent(walker_list):
+  s_num=0
+  i_num=0
+  r_num=0
+  d_num=0
+  for walker in walker_list:
+    if walker.condition == 0:
+      s_num += 1
+    elif walker.condition == 1:
+      i_num += 1
+    elif walker.condition == 2:
+      r_num += 1
+    elif walker.condition == 4:
+      d_num += 1
+  return [s_num, i_num, r_num, d_num]
+
+
+
+def generate_agent():
+  walker_list = []
   initialinfected_id = random.sample(range(population),int(population*initial_infected_rate))
   for i in range(population):
     if i+1 in initialinfected_id:
@@ -143,6 +146,7 @@ def generate_agent(walker_list):
     else:
       walker = Walker(i,0)
     walker_list.append(walker)
+    print(id,walker.condition,walker.condition,'(',walker.x, walker.y,')')
   return walker_list
 
 
@@ -154,10 +158,11 @@ def progress_day(walker_list):
   #感染が伝播したagentの特定
   infection_id = []
   for id in range(population):
-    if walker_list[id].condition==3:
+    if walker_list[id].condition==1:
       infection_id.append(id)
   for id in infection_id:
     Agt_Infect(walker_list, id)
+
   
   alive_id = []
   for id in range(population):
@@ -165,22 +170,23 @@ def progress_day(walker_list):
       alive_id.append(id)
   for id in alive_id:
     Agt_Move(walker_list,id)
+    print(id,walker_list[id].condition, '(',walker_list[id].x, walker_list[id].y,')')
   return walker_list
 
 
 def main():
   walker_list = []
-  walker_list = generate_agent(walker_list)
+  print('DAY :: ',0)
+  walker_list = generate_agent()
 
   for day in range(test_day):
+    print('DAY :: ',day+1)
     walker_list = progress_day(walker_list)
     infect_count = 0
     for walker in walker_list:
-      if walker.condition ==1:
+      if walker.condition == 1:
         infect_count+=1
-    print(day,":",infect_count)
   
-
 
 if __name__ == '__main__':
   main()
