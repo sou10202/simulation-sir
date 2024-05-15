@@ -7,6 +7,7 @@ Original file is located at
     https://colab.research.google.com/drive/1spEGOEhuIrgd1HO-O9kr4aVx4PihR1t5
 """
 
+
 import random
 import numpy as np
 import math
@@ -14,21 +15,24 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib.animation import FuncAnimation
 
-# グローバル変数（環境変数の設定）
+
 initial_infected_rate = 0.1
 population = 500
 vertical_limit = 1000
 horizontal_limit = 1000
 death_rate = 0.1
-infection_distance = 5
+infection_distance = 20
 infection_period = 10
 move_max_distance = 100
 move_min_distance = 5
 move_distance_alpha = 10
+move_distance_lambda = 1.0
 test_day = 40
 
+new_type = True
 
-class Walker():
+
+class Walker:
   #id;エージェントid
   #counter;特定のイベントの経過時間
   #x,y;座標
@@ -91,15 +95,19 @@ class Agt_Infect():
 
 
 class Agt_Move():
-    def __init__(self, walker_list, id):
+    def __init__(self, walker_list, id, move_distance_list):
       self.walker_list = walker_list
       self.id = id
+      self.move_distance = move_distance_list[id]
       self.me = walker_list[id]
-      self.run()
+      #移動方向
+      self.me.direction = random.random()*360
+      #move_distance = self.caluclate_distace()
+      [self.me.x,self.me.y]=self.move_in_direction(self.me.x, self.me.y, self.me.direction, self.move_distance)
+
     
     def caluclate_distace(self):
-      r = np.random.uniform(0, 1)
-      move_distance = (move_min_distance * (1 - r) ** (-1 / (move_distance_alpha - 1))-1) * 100
+      move_distance = float(np.random.exponential(1/move_distance_lambda, 1) * 200)
       return move_distance
       
     def move_in_direction(self,x, y, angle, distance):
@@ -120,13 +128,64 @@ class Agt_Move():
       elif new_y > vertical_limit:
         new_y=vertical_limit
       return [new_x, new_y]
-    
-    def run(self):
-      #移動方向
-      self.me.direction = random.random()*360
-      move_distance = self.caluclate_distace()
-      [self.me.x,self.me.y]=self.move_in_direction(self.me.x, self.me.y, self.me.direction, move_distance)
 
+
+class Export_Result():
+  def __init__(self,s_num_list,i_num_list,r_num_list,d_num_list,walker_lists):
+    self.s_num_list = s_num_list
+    self.i_num_list = i_num_list
+    self.r_num_list = r_num_list
+    self.d_num_list = d_num_list
+    self.walker_lists = walker_lists
+  
+
+  def create_num_fig(self):
+    plt.plot(self.s_num_list, label='Susceptible')
+    plt.plot(self.i_num_list, label='Infected')
+    plt.plot(self.r_num_list, label='Recoverd')
+    plt.plot(self.d_num_list, label='Dead')
+    # グラフのタイトルとラベル
+    plt.title('Tren of SIR (gamma:'+str(move_distance_lambda)+')')
+    plt.xlabel('Day')
+    plt.ylabel('Value')
+    # 凡例の表示
+    plt.legend()
+    # グラフを表示
+    plt.show()
+
+
+  def create_agent_fig(self):
+    # プロットの初期設定
+    color_map = {0: 'blue', 1: 'red', 2: 'green', 4: 'gray'}
+    fig, ax = plt.subplots()
+    ln_list = []
+    for id in range(1):
+      line, = ax.plot([], [], 'ro')
+      ln_list.append(line)
+
+    def init():
+      ax.set_xlim(0, 1000)
+      ax.set_ylim(0, 1000)
+      ax.set_xlabel('X')
+      ax.set_ylabel('Y')
+      ax.set_title('Agent')
+      return ln_list
+    
+    # 更新関数
+    def update(frame):
+      for id in range(1):
+        walker = self.walker_lists[frame][id]
+        print(walker.x,walker.y)
+        ln_list[id].set_data(walker.x,walker.y)
+        ln_list[id].set_color(color_map[walker.condition])
+      return ln_list[0]
+
+      
+    # アニメーションの設定
+    ani = FuncAnimation(fig, update, frames=range(test_day), interval=500, blit=True)
+    # グラフの表示
+    plt.show()
+     
 
 def generate_agent():
   walker_list = []
@@ -153,14 +212,23 @@ def progress_day(walker_list):
       infection_id.append(id)
   for id in infection_id:
     Agt_Infect(walker_list, id)
-
   
   alive_id = []
   for id in range(population):
     if walker_list[id].condition!=4:
       alive_id.append(id)
+  move_distance_list =[]
+  for id in range(population):
+    if new_type:
+      move_distance = float(np.random.exponential(1/move_distance_lambda, 1) * 50)
+    else:
+      r = np.random.uniform(0, 1)
+      move_distance = (move_min_distance * (1 - r) ** (-1 / (move_distance_alpha - 1))-1) * 50
+    with open('distance'+str(move_distance_lambda)+'.txt','a',encoding = 'utf-8') as f:
+      f.write(str(move_distance)+'\n')
+    move_distance_list.append(move_distance)
   for id in alive_id:
-    Agt_Move(walker_list,id)
+    Agt_Move(walker_list,id, move_distance_list)
     # print(id,walker_list[id].condition, '(',walker_list[id].x, walker_list[id].y,')')
   return walker_list
 
@@ -185,59 +253,6 @@ def count_agent(walker_list):
   print('死亡者数：',d_num)
   return [s_num,i_num,r_num,d_num]
 
-
-def create_num_fig(s_num_list,i_num_list,r_num_list,d_num_list):
-  plt.plot(s_num_list, label='Susceptible')
-  plt.plot(i_num_list, label='Infected')
-  plt.plot(r_num_list, label='Recoverd')
-  plt.plot(d_num_list, label='Dead')
-  # グラフのタイトルとラベル
-  plt.title('Sample Multiple Line Plot')
-  plt.xlabel('Day')
-  plt.ylabel('Value')
-  # 凡例の表示
-  plt.legend()
-  # グラフを表示
-  plt.show()
-
-
-def create_agent_fig(walker_lists):
-  global day_fig
-  day_fig = 0
-  # サンプルデータの作成
-  data = {
-    'x': [walker.x for walker in walker_lists[day_fig]],
-    'y': [walker.y for walker in walker_lists[day_fig]],
-    'status': [walker.condition for walker in walker_lists[day_fig]]
-  }
-  df = pd.DataFrame(data)
-  # 色マッピングの設定
-  color_map = {0: 'blue', 1: 'red', 2: 'green', 4: 'gray'}
-  # プロットの初期設定
-  fig, ax = plt.subplots()
-  scat = ax.scatter(df['x'], df['y'], c=[color_map[status] for status in df['status']])
-  # 軸の範囲設定
-  ax.set_xlim(0, 1000)
-  ax.set_ylim(0, 1000)
-  ax.set_xlabel('X')
-  ax.set_ylabel('Y')
-  ax.set_title('Agent')
-  # 更新関数
-  def update(frame):
-    global day_fig
-    day_fig +=1
-    # ランダムにデータを更新（サンプル用）
-    df['x'] = [walker.x for walker in walker_lists[day_fig]]
-    df['y'] = [walker.y for walker in walker_lists[day_fig]]
-    df['status'] = [walker.condition for walker in walker_lists[day_fig]]
-    # 更新されたデータに基づいて散布図を再描画
-    scat.set_offsets(np.c_[df['x'], df['y']])
-    scat.set_color([color_map[status] for status in df['status']])
-    return scat,
-  # アニメーションの設定
-  ani = FuncAnimation(fig, update, frames=range(50), interval=500, blit=True)
-  # グラフの表示
-  plt.show()
 
 def main():
   walker_lists = []
@@ -265,8 +280,10 @@ def main():
     r_num_list.append(count_list[2])
     d_num_list.append(count_list[3])
   
-  # create_num_fig(s_num_list,i_num_list,r_num_list,d_num_list)
-  create_agent_fig(walker_lists)
+  exporter = Export_Result(s_num_list,i_num_list,r_num_list,d_num_list,walker_lists)
+  #exporter.create_num_fig()
+  exporter.create_agent_fig()
+
 
 if __name__ == '__main__':
   main()
