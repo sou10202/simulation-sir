@@ -4,20 +4,12 @@ import matplotlib.pyplot as plt
 import os
 import imageio
 
-# Setting global variable
-# Infection_Rate = 0.3
-# Population = 100
-# Boundary = 50
-# Vision = 1
-# Infection_Period = 10
-# Initial_Infected = 0.4
-# Rate_SIR = [0]*3
-# walkers = []
-# speed = 0.4
-# Days = 5
-
 def distance_age(x1, y1, x2, y2):
   return (np.sqrt((x1 - x2)**2 + (y1 - y2)**2))
+
+def power_low(ganma, min_value):
+  r = np.random.uniform(0, 1)
+  return min_value * (1 - r)**(-1 / (ganma-1))
 
 def color_adjustment(self):
   if self.condition == 0:
@@ -38,13 +30,16 @@ class Walker():
     self.color = 0
     self.RN = 0 # RN is Reproduction Number -> to count how many other agents that agent spread the infection to
     self.forsort = 0
+    self.ganma = 3
+    self.minspeed = 0.2
+    self.speed = power_low(self.ganma, 0.2) # Power low distribution with gamma = 2 and min value = 0.4
 
   def turn(self):
     self.direction += 60*(random()*0.5)
 
-  def forward(self, speed, Boundary):
-    self.x += speed * np.cos(np.radians(self.direction))
-    self.y += speed * np.sin(np.radians(self.direction))
+  def forward(self, Boundary):
+    self.x += self.speed * np.cos(np.radians(self.direction))
+    self.y += self.speed * np.sin(np.radians(self.direction))
     # To loop the agents if its coordinate out of range
     self.x %= Boundary
     self.y %= Boundary
@@ -52,7 +47,6 @@ class Walker():
 class Universe():
   def __init__(self):
     self.walkers = []
-    self.speed = 0.4
     self.Days = 150
     self.Rate_SIR = [0]*3
     self.Infection_Rate = 0.5
@@ -95,7 +89,7 @@ class Universe():
 
   def agt_step(self, agt):
     agt.turn()
-    agt.forward(self.speed, self.Boundary)
+    agt.forward(self.Boundary)
     neighbors = self.MakeAllAgeSetAroundOwn(agt)
     # print(neighbors)
     if agt.condition == 0:
@@ -130,7 +124,7 @@ class Universe():
     # for i in range(len(Rate_SIR)):
     #   Rate_SIR[i] /= len(walkers)
 
-  def plot_data(self, data):
+  def plot_data(self, data, ganma):
     days = list(range(self.Days))
     s = [day[0] for day in data]
     i = [day[1] for day in data]
@@ -143,10 +137,10 @@ class Universe():
 
     plt.xlabel('Days')
     plt.ylabel('Number')
-    plt.title('SIR Model')
+    plt.title(f'SIR Model ganma={ganma}')
     plt.legend()
     plt.grid(True)
-    plt.savefig('sirmodel.png')
+    plt.savefig(f'sirmodel_ganma{ganma}.png')
     plt.show
 
   def plot_walkers(self, day):
@@ -160,10 +154,21 @@ class Universe():
     plt.savefig(f'frames/frame_{day}.png')
     plt.close()
 
+  def plot_hist(self, ganma):
+    x = [one.speed for one in self.walkers]
+    plt.hist(x, range=(0.2, 5))
+    plt.xlabel('Speed')
+    plt.ylabel('Number of Agents')
+    plt.title(f'Speed Distribution ganma={ganma}')
+    plt.grid(True)
+    plt.savefig(f'speed_distribution_ganma{ganma}.png')
+    plt.close()
+
 def main():
   data = []
   universe = Universe()
   universe.univ_init()
+  universe.plot_hist(3)
   for day in range(universe.Days):
     universe.univ_step_begin()
     for one in universe.walkers:
@@ -171,7 +176,7 @@ def main():
     universe.univ_step_end()
     data.append(universe.Rate_SIR[:])
     universe.plot_walkers(day)
-  universe.plot_data(data)
+  universe.plot_data(data, 3)
 
     # Create GIF
   with imageio.get_writer('simulation.gif', mode='I', duration=0.5) as writer:
