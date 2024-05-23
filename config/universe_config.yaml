@@ -1,0 +1,8 @@
+Days: 150
+Rate_SIR: [0, 0, 0]
+Infection_Rate: 0.5
+Population: 1000
+Boundary: 50
+Vision: 1.5
+Infection_Period: 30
+Initial_Infected: 3
