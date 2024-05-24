@@ -7,6 +7,7 @@ class Walker():
   def __init__(self, id):
     self.id = id
     self.counter = 0 # to count incubation period
+    self.age = randint(18, 80)
     self.x = randint(0, 50)
     self.y = randint(0, 50)
     self.condition = 0
@@ -14,14 +15,24 @@ class Walker():
     self.color = 0
     self.RN = 0 # RN is Reproduction Number -> to count how many other agents that agent spread the infection to
     self.forsort = 0 # Power low distribution with gamma = 2 and min value = 0.4
+    self.get_speed_by_age()
     self.load_config('config/walker_config.yaml')
+
 
   def load_config(self, file):
     with open(file, 'r') as f:
       config = yaml.safe_load(f)
     self.ganma = config['ganma']
-    self.minspeed = config['minspeed']
+    self.minspeed = self.get_speed_by_age()
     self.speed = power_low(self.ganma, self.minspeed)
+
+  def get_speed_by_age(self):
+    if self.age < 50:
+      self.color = "lightgreen"
+      return 0.2
+    else:
+      self.color = "green"
+      return 0.05
 
   def turn(self):
     self.direction += 60*(random()*0.5)
