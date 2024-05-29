@@ -7,6 +7,9 @@ import yaml
 class Universe():
   def __init__(self):
     self.walkers = []
+    self.Rate_SIR = [0, 0, 0]
+    self.Rate_SIR_young = [0, 0, 0]
+    self.Rate_SIR_old = [0, 0, 0]
     self.load_config('config/universe_config.yaml')
 
   def load_config(self, file):
@@ -17,9 +20,10 @@ class Universe():
     self.Initial_Infected = config['Initial_Infected']
     self.Vision = config['Vision']
     self.Boundary = config['Boundary']
-    self.Infection_Rate = config['Infection_Rate']
+    self.Infection_Rate_young = config['Infection_Rate_young']
+    self.Infection_Rate_old = config['Infection_Rate_old']
     self.Infection_Period = config['Infection_Period']
-    self.Rate_SIR = [0, 0, 0]
+    self.youngpeople_rate = config['Youngpeople_rate']
   
   def MakeAllAgeSetAroundOwn(self, agt):
     neighbors = []
@@ -34,7 +38,10 @@ class Universe():
   
   def univ_init(self):
     for i in range(self.Population):
-      tmp_age = Walker(i)
+      if i < self.Population * self.youngpeople_rate:
+        tmp_age = Walker(i, 1)
+      else:
+        tmp_age = Walker(i, 2)
       self.walkers.append(tmp_age)
 
     if self.Initial_Infected < 1:
@@ -56,13 +63,16 @@ class Universe():
     agt.turn()
     agt.forward(self.Boundary)
     neighbors = self.MakeAllAgeSetAroundOwn(agt)
-    # print(neighbors)
     if agt.condition == 0:
       pass
     elif agt.condition == 1:
       agt.counter += agt.counter
       for one in neighbors:
-        if (one.condition == 0) & (random() < self.Infection_Rate):
+        if one.agegroup == 1:
+          Infection_Rate = self.Infection_Rate_young
+        else:
+          Infection_Rate = self.Infection_Rate_old
+        if (one.condition == 0) & (random() < Infection_Rate):
           one.condition = 1
           one.RN = 0
           agt.RN += 1
@@ -71,7 +81,6 @@ class Universe():
         agt.counter = 0
     elif agt.condition == 2:
       pass
-    # color_adjustment(self)
 
   def univ_step_begin(self):
     for one in self.walkers:
@@ -82,14 +91,20 @@ class Universe():
 
   def univ_step_end(self):
     for i in range(len(self.Rate_SIR)):
+      self.Rate_SIR_young[i] = 0
+      self.Rate_SIR_old[i] = 0
       self.Rate_SIR[i] = 0
     for one in self.walkers:
+      if one.agegroup == 1:
+        self.Rate_SIR_young[one.condition] += 1
+      else:
+        self.Rate_SIR_old[one.condition] += 1
       self.Rate_SIR[one.condition] += 1
     # print(self.Rate_SIR)
     # for i in range(len(Rate_SIR)):
     #   Rate_SIR[i] /= len(walkers)
 
-  def plot_data(self, data, ganma):
+  def plot_data(self, data, ganma, group):
     days = list(range(self.Days))
     s = [day[0] for day in data]
     i = [day[1] for day in data]
@@ -102,10 +117,10 @@ class Universe():
 
     plt.xlabel('Days')
     plt.ylabel('Number')
-    plt.title(f'SIR Model ganma={ganma}')
+    plt.title(f'SIR Model ganma={ganma} {group}')
     plt.legend()
     plt.grid(True)
-    plt.savefig(f'sirmodel_ganma{ganma}.png')
+    plt.savefig(f'out/PNG/sirmodel_ganma{ganma}_{group}.png')
     plt.show
 
   def plot_walkers(self, day):
