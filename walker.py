@@ -1,26 +1,22 @@
 from random import randint, random
 import numpy as np
-from utils import power_low
+from utils import power_low, generate_dense_position, generate_sparse_position
 import yaml
 
 class Walker():
   def __init__(self, id, agegroup):
     self.id = id
     self.counter = 0 # to count incubation period
-    self.x = randint(0, 50)
-    self.y = randint(0, 50)
-    # if agegroup == 1:
-    #     self.x = randint(0, 50)
-    #     self.y = randint(0, 25)
-    # else:
-    #     self.x = randint(0, 50)
-    #     self.y = randint(25, 50)
     self.condition = 0
     self.direction = random()*360
     self.color = 0
     self.RN = 0 # RN is Reproduction Number -> to count how many other agents that agent spread the infection to
     self.forsort = 0 # Power low distribution with gamma = 2 and min value = 0.4
     self.agegroup = agegroup
+    if agegroup == 1:
+      self.x, self.y = generate_dense_position(random())
+    else:
+      self.x, self.y = generate_sparse_position(random())
     with open('config/walker_config.yaml', 'r') as f:
         config = yaml.safe_load(f)
         if agegroup == 1:

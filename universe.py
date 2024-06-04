@@ -52,12 +52,9 @@ class Universe():
         else:
           one.condition = 0
     else:
-      counter = 0
-      for one in self.walkers:
-        if counter < self.Initial_Infected:
-          one.condition = 1
-          one.RN = 0
-          counter+=1
+      for one in self.walkers[:self.Initial_Infected]:
+        one.condition = 1
+        one.RN = 0
 
   def agt_step(self, agt):
     agt.turn()
