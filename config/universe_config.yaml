@@ -1,10 +1,10 @@
 Days: 150
 Rate_SIR: [0, 0, 0]
-Infection_Rate_young: 0.4
-Infection_Rate_old: 0.8
+Infection_Rate_young: 0.3
+Infection_Rate_old: 0.75
 Population: 500
 Boundary: 50
 Vision: 1.5
 Infection_Period: 30
 Initial_Infected: 3
-Youngpeople_rate: 0.5
+Youngpeople_rate: 0.4

@@ -4,9 +4,6 @@ from universe import Universe
 import yaml
 
 def main():
-  with open('config/walker_config.yaml', 'r') as f:
-    config = yaml.safe_load(f)
-  ganma = config['ganma']
   data = []
   data_young = []
   data_old = []
@@ -22,12 +19,12 @@ def main():
     data_young.append(universe.Rate_SIR_young[:])
     data_old.append(universe.Rate_SIR_old[:])
     universe.plot_walkers(day)
-  universe.plot_data(data,ganma, "all")
-  universe.plot_data(data_young,ganma, "young")
-  universe.plot_data(data_old,ganma, "old")
+  universe.plot_data(data, "all")
+  universe.plot_data(data_young, "young")
+  universe.plot_data(data_old, "old")
 
     # Create GIF
-  with imageio.get_writer(f'out/GIF/simulation_ganma{ganma}.gif', mode='I', duration=0.5) as writer:
+  with imageio.get_writer(f'out/GIF/simulation_age.gif', mode='I', duration=0.5) as writer:
       for day in range(universe.Days):
           filename = f'frames/frame_{day}.png'
           image = imageio.imread(filename)

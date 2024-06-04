@@ -104,7 +104,7 @@ class Universe():
     # for i in range(len(Rate_SIR)):
     #   Rate_SIR[i] /= len(walkers)
 
-  def plot_data(self, data, ganma, group):
+  def plot_data(self, data, group):
     days = list(range(self.Days))
     s = [day[0] for day in data]
     i = [day[1] for day in data]
@@ -117,10 +117,10 @@ class Universe():
 
     plt.xlabel('Days')
     plt.ylabel('Number')
-    plt.title(f'SIR Model ganma={ganma} {group}')
+    plt.title(f'SIR Model {group}')
     plt.legend()
     plt.grid(True)
-    plt.savefig(f'out/PNG/sirmodel_ganma{ganma}_{group}.png')
+    plt.savefig(f'out/PNG/sirmodel_{group}.png')
     plt.show
 
   def plot_walkers(self, day):

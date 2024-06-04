@@ -1,2 +1,4 @@
 ganma: 1.5
 minspeed: 0.2
+speed_young: 0.4
+speed_old: 0.15
