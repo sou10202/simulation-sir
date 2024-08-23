@@ -1,2 +1,2 @@
 # simulation-sir
-to manage SIRModel code in sig-simulation work
+to manage SIRModel code written by Python.
